@@ -1,0 +1,21 @@
+﻿<Window x:Name="window" x:Class="SaveScummer.Restore"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SaveScummer"
+        mc:Ignorable="d"
+        Title="Restore" Height="300" Width="330">
+    <Grid>
+        <Grid Margin="10,10,10,40">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="1*"/>
+            </Grid.RowDefinitions>
+            <ListBox Name="ListBoxSaveNames" Grid.Row="0" Margin="0,0,0,10" ItemsSource="{Binding SaveNames, ElementName=window}" SelectionChanged="SaveNameIndexChanged"/>
+            <ListBox Name="ListBoxSaveNamesData" Grid.Row="1 " Margin="0,0,0,0" ItemsSource="{Binding SaveNameData, ElementName=window}" SelectionChanged="SaveNameDataIndexChanged"/>
+        </Grid>
+        <Button Content="Restore" Click="Restore_Click" Margin="10,0,10,10" Height="20" VerticalAlignment="Bottom"  IsEnabled="{Binding Path=CanRestore}"/>
+
+    </Grid>
+</Window>

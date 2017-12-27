@@ -56,24 +56,89 @@ namespace SaveScummer
       }
     }
 
+    private void Restore_Click(object sender, RoutedEventArgs e)
+    {
+      Restore restore = new Restore(SaveScumFolder, SaveScumBackupFolder);
+      if(restore.ShowDialog() == true)
+      {
+        string filename = restore.SaveFile;
+        bool shouldReactivate = m_FSWatcher != null;
+        ChangeActive(false);
+
+        int lastPeriod = filename.LastIndexOf('.');
+        if (lastPeriod > 1)
+        {
+          int secondLastPeriod = filename.LastIndexOf('.', lastPeriod - 1);
+          if (secondLastPeriod > 1)
+          {
+            //find and remove the timestamp
+            string name = filename.Remove(secondLastPeriod, lastPeriod - secondLastPeriod);
+
+            string saveFile = System.IO.Path.Combine(m_SaveScumFolder, name);
+            string backupSaveFile = System.IO.Path.Combine(m_SaveScumBackupFolder, filename);
+
+            if (System.IO.File.Exists(backupSaveFile))
+            {
+              //if the original file exists, back it up now
+              if(System.IO.File.Exists(saveFile))
+                BackupFile(saveFile);
+
+              BackupLog += "Restoring " + backupSaveFile + " to " + saveFile + "\n";
+              Directory.CreateDirectory(System.IO.Path.GetDirectoryName(saveFile));
+              File.Copy(backupSaveFile, saveFile, true);
+
+              BackupLog += "done\n";
+
+            }
+            else
+            {
+              BackupLog += "Tried to restore " + backupSaveFile + " but the file does not exist";
+            }
+
+          }
+        }
+        ChangeActive(shouldReactivate);
+      }
+    }
+
     private void CheckBox_Checked(object sender, RoutedEventArgs e)
     {
-      m_FSWatcher = new FileSystemWatcher(SaveScumFolder);
-      m_FSWatcher.Changed += new FileSystemEventHandler(OnChanged);
-      m_FSWatcher.Created += new FileSystemEventHandler(OnChanged);
-      m_FSWatcher.IncludeSubdirectories = true;
-
-      m_FSWatcher.EnableRaisingEvents = true;
-      BackupLog += "Watching " + SaveScumFolder + "\n";
-      OnPropertyChanged("CanEdit");
-   }
+      ChangeActive(true);
+    }
 
     private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
     {
-      m_FSWatcher.EnableRaisingEvents = false;
-      m_FSWatcher = null;
-      BackupLog += "Stopped watching " + SaveScumFolder + "\n";
-      OnPropertyChanged("CanEdit");
+      ChangeActive(false);
+    }
+
+    private void ChangeActive(bool isActive)
+    {
+      if(isActive)
+      {
+        if(m_FSWatcher == null)
+        {
+          m_FSWatcher = new FileSystemWatcher(SaveScumFolder);
+          m_FSWatcher.Changed += new FileSystemEventHandler(OnChanged);
+          m_FSWatcher.Created += new FileSystemEventHandler(OnChanged);
+          m_FSWatcher.IncludeSubdirectories = true;
+
+          m_FSWatcher.EnableRaisingEvents = true;
+          BackupLog += "Watching " + SaveScumFolder + "\n";
+          OnPropertyChanged("CanEdit");
+        }
+      }
+      else
+      {
+        if(m_FSWatcher != null)
+        {
+          m_FSWatcher.EnableRaisingEvents = false;
+          m_FSWatcher = null;
+          m_Timers.Clear();
+          BackupLog += "Stopped watching " + SaveScumFolder + "\n";
+          OnPropertyChanged("CanEdit");
+        }
+      }
+
     }
 
     private void OnChanged(object source, FileSystemEventArgs e)
@@ -107,9 +172,13 @@ namespace SaveScummer
     private void OnFileReady(object source, FileReadyEvent.StringEventArgs e)
     {
       m_Timers.Remove(e.Data);
-      // Specify what is done when a file is changed, created, or deleted.
-      String fullPath = e.Data;
-      String path = e.Data;
+
+      BackupFile(e.Data);
+    }
+
+    private void BackupFile(string path)
+    {
+      string fullPath = path;
       if (path.StartsWith(m_SaveScumFolder))
       {
         path = path.Substring(m_SaveScumFolder.Length).TrimStart('\\');
@@ -122,10 +191,11 @@ namespace SaveScummer
       String backupPath = System.IO.Path.Combine(dir, filename + DateTime.Now.ToString(".yyyyMMddHHmmss") + extension);
       String fullBackupPath = System.IO.Path.Combine(SaveScumBackupFolder, backupPath);
 
-      BackupLog += "Backing up " + e.Data + " to " + backupPath + "\n";
+      BackupLog += "Backing up " + fullPath + " to " + backupPath + "\n";
       Directory.CreateDirectory(System.IO.Path.GetDirectoryName(fullBackupPath));
       File.Copy(fullPath, fullBackupPath);
       BackupLog += "done\n";
+
     }
 
     public void SettingsLoaded()
