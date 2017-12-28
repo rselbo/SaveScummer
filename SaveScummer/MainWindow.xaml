@@ -8,7 +8,9 @@
         <TextBox Height="23" Margin="132,10,90,0" TextWrapping="NoWrap" Text="{Binding Path=SaveScumFolder}" VerticalAlignment="Top" IsEnabled="{Binding Path=CanEdit}"/>
         <TextBox Height="23" Margin="132,45,90,0" TextWrapping="NoWrap" Text="{Binding Path=SaveScumBackupFolder}" VerticalAlignment="Top" IsEnabled="{Binding Path=CanEdit}"/>
         <Button Content="Browse" Margin="0,9,10,0" Height="24" VerticalAlignment="Top" HorizontalAlignment="Right" Width="75" Click="Browse_Click" IsEnabled="{Binding Path=CanEdit}"/>
-        <TextBlock Margin="10,72,10,37" TextWrapping="Wrap" Text="{Binding Path=BackupLog}" RenderTransformOrigin="-0.16,-1.375"/>
+        <ScrollViewer Name="ScrollViewer" Margin="10,80,10,40" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollChanged="BackuplogScroll">
+            <TextBlock TextWrapping="Wrap" Text="{Binding BackupLog}"/>
+        </ScrollViewer>
         <CheckBox Content="Active" HorizontalAlignment="Right" Margin="0,47,10,0" VerticalAlignment="Top" IsEnabled="{Binding Path=CanScum}" RenderTransformOrigin="2.887,2.267" Width="75" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked"/>
         <Button Content="Restore Save" Margin="0,0,0,8" HorizontalAlignment="Center" Width="295" Click="Restore_Click" Height="24" VerticalAlignment="Bottom"/>
     </Grid>
