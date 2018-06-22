@@ -121,6 +121,7 @@ namespace SaveScummer
           m_FSWatcher = new FileSystemWatcher(SaveScumFolder);
           m_FSWatcher.Changed += new FileSystemEventHandler(OnChanged);
           m_FSWatcher.Created += new FileSystemEventHandler(OnChanged);
+          m_FSWatcher.Renamed += new RenamedEventHandler(OnRenamed);
           m_FSWatcher.IncludeSubdirectories = true;
 
           m_FSWatcher.EnableRaisingEvents = true;
@@ -149,19 +150,22 @@ namespace SaveScummer
         FileAttributes attributes = File.GetAttributes(e.FullPath);
         if ((attributes & FileAttributes.Directory) != FileAttributes.Directory)
         {
-          FileReadyEvent fileReadyEvent = null;
-          if(m_Timers.ContainsKey(e.FullPath))
+          if(!e.FullPath.EndsWith(".tmp"))
           {
-            fileReadyEvent = m_Timers[e.FullPath];
-            fileReadyEvent.Stop();
+            FileReadyEvent fileReadyEvent = null;
+            if (m_Timers.ContainsKey(e.FullPath))
+            {
+              fileReadyEvent = m_Timers[e.FullPath];
+              fileReadyEvent.Stop();
+            }
+            else
+            {
+              fileReadyEvent = new FileReadyEvent(e.FullPath, new TimeSpan(0, 0, 5), m_MainDispatcher);
+              fileReadyEvent.Ready += new EventHandler<FileReadyEvent.StringEventArgs>(OnFileReady);
+              m_Timers.Add(e.FullPath, fileReadyEvent);
+            }
+            fileReadyEvent.Start();
           }
-          else
-          {
-            fileReadyEvent = new FileReadyEvent(e.FullPath, new TimeSpan(0, 0, 5), m_MainDispatcher);
-            fileReadyEvent.Ready += new EventHandler<FileReadyEvent.StringEventArgs>(OnFileReady);
-            m_Timers.Add(e.FullPath, fileReadyEvent);
-          }
-          fileReadyEvent.Start();        
         }
       }
       catch (System.Exception)
@@ -169,6 +173,41 @@ namespace SaveScummer
         //couldnt get attributes for file so just let it pass
       }
     }
+
+    private void OnRenamed(object source, FileSystemEventArgs e)
+    {
+      try
+      {
+        FileAttributes attributes = File.GetAttributes(e.FullPath);
+        if ((attributes & FileAttributes.Directory) != FileAttributes.Directory)
+        {
+          //this is not a save file to backup save file event
+          var renamedEvent = (RenamedEventArgs)e;
+          if (!renamedEvent.Name.Contains("Backup"))
+          {
+            FileReadyEvent fileReadyEvent = null;
+            if (m_Timers.ContainsKey(e.FullPath))
+            {
+              fileReadyEvent = m_Timers[e.FullPath];
+              fileReadyEvent.Stop();
+            }
+            else
+            {
+              fileReadyEvent = new FileReadyEvent(e.FullPath, new TimeSpan(0, 0, 5), m_MainDispatcher);
+              fileReadyEvent.Ready += new EventHandler<FileReadyEvent.StringEventArgs>(OnFileReady);
+              m_Timers.Add(e.FullPath, fileReadyEvent);
+            }
+            fileReadyEvent.Start();
+          }
+
+        }
+      }
+      catch (System.Exception)
+      {
+        //couldnt get attributes for file so just let it pass
+      }
+    }
+
 
     private void OnFileReady(object source, FileReadyEvent.StringEventArgs e)
     {
